@@ -58,6 +58,7 @@
   .btn-primary{background:#1565C0;color:white;border:none;padding:12px;border-radius:var(--border-radius-md);font-size:14px;font-weight:600;cursor:pointer;width:100%;margin-top:8px;}
   .btn-sm{background:transparent;border:1px solid #1565C0;color:#1565C0;padding:6px 12px;border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;}
   .btn-warn{background:transparent;border:1px solid #FFA726;color:#854F0B;padding:6px 10px;border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;}
+  .btn-del{background:transparent;border:1px solid var(--color-border-danger);color:var(--color-text-danger);padding:6px 10px;border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;}
   .btn-edit{background:transparent;border:1px solid #1565C0;color:#1565C0;padding:6px 10px;border-radius:var(--border-radius-md);font-size:12px;cursor:pointer;}
   .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
   .mcard{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px;text-align:center;}
@@ -439,7 +440,10 @@ function renderHistorial(){
         <span style="font-size:11px;color:var(--color-text-secondary);margin-left:6px;">${misLabel}</span>
         <div style="font-size:11px;color:var(--color-text-secondary);margin-top:2px;">Culto: ${r.culto} · Clases: ${totalClasesRep(r)} · Vis: ${r.visA}${r.misId?' · Asist: '+r.asistM+' · Fe: '+r.fe:''}</div>
       </div>
-      <button class="btn-edit" onclick="toggleEditRep('${r.id}')"><i class="ti ti-edit" aria-hidden="true"></i></button>
+      <div style="display:flex;gap:5px;">
+        <button class="btn-edit" onclick="toggleEditRep('${r.id}')"><i class="ti ti-edit" aria-hidden="true"></i></button>
+        <button class="btn-del" onclick="eliminarReporte('${r.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button>
+      </div>
     </div>
     <div class="rep-edit-panel" id="ep-${r.id}">
       <div style="font-size:13px;font-weight:600;color:#1565C0;margin-bottom:10px;">Editando: ${fmtF(r.fecha)}</div>
@@ -466,6 +470,11 @@ function renderHistorial(){
   }).join('');
 }
 function toggleEditRep(id){document.getElementById('ep-'+id).classList.toggle('open');}
+function eliminarReporte(id){
+  if(!confirm('¿Eliminar definitivamente este reporte?\nEsta acción no se puede deshacer.'))return;
+  reps=reps.filter(r=>r.id!==id);
+  save();toast('Reporte eliminado.');renderHistorial();
+}
 function guardarEdicion(id){
   const idx=reps.findIndex(r=>r.id===id);if(idx<0)return;
   const r=reps[idx];
@@ -496,11 +505,17 @@ function guardarMaestro(id){
 }
 function archivarClase(id){const c=clases.find(x=>x.id===id);if(!c)return;c.activa=false;save();renderClasesConfig();buildClasesForm();toast('Clase archivada.');}
 function restaurarClase(id){const c=clases.find(x=>x.id===id);if(!c)return;c.activa=true;save();renderClasesConfig();buildClasesForm();toast('Clase restaurada.');}
+function eliminarClase(id){
+  const c=clases.find(x=>x.id===id);if(!c)return;
+  if(!confirm('¿Eliminar definitivamente "'+c.nombre+'"?\nSe perderán todos sus datos históricos.'))return;
+  clases=clases.filter(x=>x.id!==id);
+  save();renderClasesConfig();buildClasesForm();toast('Clase eliminada.');
+}
 function renderClasesConfig(){
   const act=clases.filter(c=>c.activa),arch=clases.filter(c=>!c.activa);
-  document.getElementById('clases-activas-lista').innerHTML=act.length?act.map(c=>`<div class="list-row" style="flex-direction:column;align-items:flex-start;"><div style="display:flex;align-items:center;justify-content:space-between;width:100%;"><div><span style="font-size:13px;font-weight:500;">${c.nombre}</span>${c.maestro?`<div class="maestro-tag"><i class="ti ti-user" aria-hidden="true"></i>${c.maestro}</div>`:'<div style="font-size:10px;color:var(--color-text-tertiary);">Sin maestro</div>'}</div><div style="display:flex;gap:5px;"><button class="btn-edit" onclick="editarMaestro('${c.id}')"><i class="ti ti-user-edit" aria-hidden="true"></i></button><button class="btn-warn" onclick="archivarClase('${c.id}')"><i class="ti ti-archive" aria-hidden="true"></i></button></div></div><div class="edit-inline" id="edit-mae-${c.id}"><input type="text" id="inp-mae-${c.id}" value="${c.maestro||''}" placeholder="Nombre del maestro/a"/><button class="btn-sm" onclick="guardarMaestro('${c.id}')"><i class="ti ti-check" aria-hidden="true"></i></button><button class="btn-sm" onclick="editarMaestro('${c.id}')">✕</button></div></div>`).join(''):'<div class="empty">Sin clases activas.</div>';
+  document.getElementById('clases-activas-lista').innerHTML=act.length?act.map(c=>`<div class="list-row" style="flex-direction:column;align-items:flex-start;"><div style="display:flex;align-items:center;justify-content:space-between;width:100%;"><div><span style="font-size:13px;font-weight:500;">${c.nombre}</span>${c.maestro?`<div class="maestro-tag"><i class="ti ti-user" aria-hidden="true"></i>${c.maestro}</div>`:'<div style="font-size:10px;color:var(--color-text-tertiary);">Sin maestro</div>'}</div><div style="display:flex;gap:5px;"><button class="btn-edit" onclick="editarMaestro('${c.id}')"><i class="ti ti-user-edit" aria-hidden="true"></i></button><button class="btn-warn" onclick="archivarClase('${c.id}')"><i class="ti ti-archive" aria-hidden="true"></i></button><button class="btn-del" onclick="eliminarClase('${c.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button></div></div><div class="edit-inline" id="edit-mae-${c.id}"><input type="text" id="inp-mae-${c.id}" value="${c.maestro||''}" placeholder="Nombre del maestro/a"/><button class="btn-sm" onclick="guardarMaestro('${c.id}')"><i class="ti ti-check" aria-hidden="true"></i></button><button class="btn-sm" onclick="editarMaestro('${c.id}')">✕</button></div></div>`).join(''):'<div class="empty">Sin clases activas.</div>';
   document.getElementById('arch-cl-subtit').style.display=arch.length?'flex':'none';
-  document.getElementById('clases-archivadas-lista').innerHTML=arch.map(c=>`<div class="list-row"><span style="font-size:13px;color:var(--color-text-secondary);">${c.nombre}${c.maestro?' · '+c.maestro:''} <span class="pill-arch">arch.</span></span><button class="btn-sm" onclick="restaurarClase('${c.id}')"><i class="ti ti-restore" aria-hidden="true"></i></button></div>`).join('');
+  document.getElementById('clases-archivadas-lista').innerHTML=arch.map(c=>`<div class="list-row"><span style="font-size:13px;color:var(--color-text-secondary);">${c.nombre}${c.maestro?' · '+c.maestro:''} <span class="pill-arch">arch.</span></span><div style="display:flex;gap:5px;"><button class="btn-sm" onclick="restaurarClase('${c.id}')"><i class="ti ti-restore" aria-hidden="true"></i></button><button class="btn-del" onclick="eliminarClase('${c.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button></div></div>`).join('');
 }
 function addMision(){
   const n=document.getElementById('nm-nombre').value.trim();
@@ -513,6 +528,13 @@ function addMision(){
 }
 function archivarMision(id){const m=misiones.find(x=>x.id===id);if(!m)return;m.activa=false;save();renderMisCatalog();refreshMisSelect();toast('"'+m.nombre+'" archivada.');}
 function restaurarMision(id){const m=misiones.find(x=>x.id===id);if(!m)return;m.activa=true;save();renderMisCatalog();refreshMisSelect();toast('"'+m.nombre+'" restaurada.');}
+function eliminarMision(id){
+  const m=misiones.find(x=>x.id===id);if(!m)return;
+  if(!confirm('¿Eliminar definitivamente "'+m.nombre+'"?\nSe perderán todos sus reportes históricos.'))return;
+  misiones=misiones.filter(x=>x.id!==id);
+  reps=reps.filter(r=>r.misId!==id);
+  save();renderMisCatalog();refreshMisSelect();toast('Eliminado definitivamente.');
+}
 function toggleEditMision(id){document.getElementById('edit-mis-'+id).classList.toggle('open');}
 function guardarEditMision(id){
   const m=misiones.find(x=>x.id===id);if(!m)return;
@@ -534,6 +556,7 @@ function renderMisList(act,arch,elAct,elArch,subtitId){
           <span class="badge">${cnt(m)}</span>
           <button class="btn-edit" onclick="toggleEditMision('${m.id}')"><i class="ti ti-edit" aria-hidden="true"></i></button>
           <button class="btn-warn" onclick="archivarMision('${m.id}')"><i class="ti ti-archive" aria-hidden="true"></i></button>
+          <button class="btn-del" onclick="eliminarMision('${m.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button>
         </div>
       </div>
       <div class="edit-inline" id="edit-mis-${m.id}" style="width:100%;flex-direction:column;gap:6px;margin-top:8px;">
@@ -549,7 +572,7 @@ function renderMisList(act,arch,elAct,elArch,subtitId){
       </div>
     </div>`).join(''):'<div class="empty">Sin registros activos.</div>';
   document.getElementById(subtitId).style.display=arch.length?'flex':'none';
-  document.getElementById(elArch).innerHTML=arch.map(m=>`<div class="list-row"><div><div style="font-size:13px;color:var(--color-text-secondary);">${m.nombre} <span class="pill-arch">arch.</span></div><div style="font-size:11px;color:var(--color-text-secondary);">${m.responsable||''}${m.desc?' · '+m.desc:''}</div></div><div style="display:flex;gap:5px;"><span class="badge-arch">${cnt(m)}</span><button class="btn-sm" onclick="restaurarMision('${m.id}')"><i class="ti ti-restore" aria-hidden="true"></i></button></div></div>`).join('');
+  document.getElementById(elArch).innerHTML=arch.map(m=>`<div class="list-row"><div><div style="font-size:13px;color:var(--color-text-secondary);">${m.nombre} <span class="pill-arch">arch.</span></div><div style="font-size:11px;color:var(--color-text-secondary);">${m.responsable||''}${m.desc?' · '+m.desc:''}</div></div><div style="display:flex;gap:5px;"><span class="badge-arch">${cnt(m)}</span><button class="btn-sm" onclick="restaurarMision('${m.id}')"><i class="ti ti-restore" aria-hidden="true"></i></button><button class="btn-del" onclick="eliminarMision('${m.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button></div></div>`).join('');
 }
 function renderMisCatalog(){
   renderMisList(misPorTipo('mision'),misPorTipo('mision',false).filter(m=>!m.activa),'mis-activas-lista','mis-archivadas-lista','arch-mis-subtit');
